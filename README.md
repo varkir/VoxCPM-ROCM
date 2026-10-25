@@ -1,4 +1,4 @@
-# voxcpm-rocm
+# VoxCPM-ROCM
 
 **Text-to-speech (TTS) VoxCPM2 di GPU AMD**, siap pakai dalam kontainer Podman,
 lengkap dengan WebUI seperti [demo resmi di Hugging Face](https://huggingface.co/spaces/openbmb/VoxCPM-Demo):
