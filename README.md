@@ -187,7 +187,6 @@ podman run --rm -it \
   -e GRADIO_SERVER_PORT=7770 \
   -e TEXT_NUMBER_LANG=id \
   -e ASR_LANGUAGE=id \
-  -e MIOPEN_FIND_MODE=FAST \
   -v /mnt/varkir/Podman/voxcpm/models:/app/models \
   -v /mnt/varkir/Podman/voxcpm/data:/app/data \
   -v /mnt/varkir/Podman/voxcpm/lora:/app/lora \
@@ -212,7 +211,6 @@ Arti tiap baris:
 | `-e PORT=7770 -e GRADIO_SERVER_PORT=7770` | WebUI mendengarkan di port 7770 (bawaan 8808) |
 | `-e TEXT_NUMBER_LANG=id` | angka dibaca dalam Bahasa Indonesia: `2026` → "dua ribu dua puluh enam" |
 | `-e ASR_LANGUAGE=id` | Whisper menganggap audio referensi berbahasa Indonesia |
-| `-e MIOPEN_FIND_MODE=FAST` | tanpa ini, GPU "menguji" ulang kernel untuk **setiap panjang teks baru** sehingga generate bisa 4–5× lebih lambat (penting untuk teks panjang) |
 | `-v …:/app/…` | sambungkan 4 folder dari langkah 2 ke dalam kontainer |
 | `ghcr.io/varkir/voxcpm:rocm` | image yang dijalankan |
 
@@ -420,7 +418,7 @@ Tambahkan dengan `-e NAMA=nilai` di `podman run`, atau di depan `run.sh` (`PORT=
 | `ASR_DEVICE` | GPU | `cpu` kalau VRAM sempit |
 | `TEXT_NUMBER_LANG` | kosong (mati) | `id` = angka → kata Bahasa Indonesia |
 | `HSA_OVERRIDE_GFX_VERSION` | — | lihat tabel di langkah 5; `run.sh` mengisinya otomatis |
-| `MIOPEN_FIND_MODE` | (normal) | `FAST` = jangan benchmark kernel per panjang baru; jauh lebih cepat untuk teks bervariasi |
+| `MIOPEN_FIND_MODE` | `FAST` | sudah bawaan image. Jangan diubah: mode lain membuat GPU "menguji" ulang kernel untuk setiap panjang teks baru, sehingga generate 4–5× lebih lambat |
 | `HF_TOKEN` | — | token Hugging Face, hanya untuk model privat |
 
 ---

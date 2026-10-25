@@ -50,7 +50,7 @@ Pushing a new `:rocm` leaves the previous version untagged. Delete it to keep a 
 - **ASR:** Whisper (`openai/whisper-large-v3-turbo`) replaces SenseVoice, which can't do Indonesian.
 - **Indonesian numbers:** upstream normalizer is zh/en only. `TEXT_NUMBER_LANG=id` expands digits
   with `num2words` in `launch.py:expand_numbers` (handles `Rp`, `%`, `HH.MM`, `1.000.000`, `3,5`).
-- **MIOpen find mode:** run with `MIOPEN_FIND_MODE=FAST`. In the default mode MIOpen benchmarks
+- **MIOpen find mode:** `MIOPEN_FIND_MODE=FAST` is baked into the image (Containerfile ENV). In the default mode MIOpen benchmarks
   convolution kernels for every new input shape, i.e. every new text/audio length, which made
   long-form chunks run at RTF 4–11 instead of about 2.3. The find-db lives in `models/.cache/miopen`.
 - **Generation limits:** each step = 4 latent frames at 25 Hz = 0.16 s, and `max_len=4096` gives about 655 s
