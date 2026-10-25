@@ -25,11 +25,12 @@ podman pull ghcr.io/varkir/voxcpm:rocm
 4. [Unduh model (opsional)](#4-unduh-model-opsional)
 5. [Jalankan](#5-jalankan) — cara mudah atau `podman run` manual
 6. [Memakai WebUI](#6-memakai-webui)
-7. [Menjalankan di background & otomatis saat boot](#7-menjalankan-di-background--otomatis-saat-boot)
-8. [Training LoRA](#8-training-lora)
-9. [Update, backup, dan pemulihan](#9-update-backup-dan-pemulihan)
-10. [Pengaturan (environment variable)](#10-pengaturan-environment-variable)
-11. [Masalah yang sering terjadi](#11-masalah-yang-sering-terjadi)
+7. [Teks panjang (buku, artikel)](#7-teks-panjang-buku-artikel) — satu file teks jadi satu file audio
+8. [Menjalankan di background & otomatis saat boot](#8-menjalankan-di-background--otomatis-saat-boot)
+9. [Training LoRA](#9-training-lora)
+10. [Update, backup, dan pemulihan](#10-update-backup-dan-pemulihan)
+11. [Pengaturan (environment variable)](#11-pengaturan-environment-variable)
+12. [Masalah yang sering terjadi](#12-masalah-yang-sering-terjadi)
 
 ---
 
@@ -186,6 +187,7 @@ podman run --rm -it \
   -e GRADIO_SERVER_PORT=7770 \
   -e TEXT_NUMBER_LANG=id \
   -e ASR_LANGUAGE=id \
+  -e MIOPEN_FIND_MODE=FAST \
   -v /mnt/varkir/Podman/voxcpm/models:/app/models \
   -v /mnt/varkir/Podman/voxcpm/data:/app/data \
   -v /mnt/varkir/Podman/voxcpm/lora:/app/lora \
@@ -210,6 +212,7 @@ Arti tiap baris:
 | `-e PORT=7770 -e GRADIO_SERVER_PORT=7770` | WebUI mendengarkan di port 7770 (bawaan 8808) |
 | `-e TEXT_NUMBER_LANG=id` | angka dibaca dalam Bahasa Indonesia: `2026` → "dua ribu dua puluh enam" |
 | `-e ASR_LANGUAGE=id` | Whisper menganggap audio referensi berbahasa Indonesia |
+| `-e MIOPEN_FIND_MODE=FAST` | tanpa ini, GPU "menguji" ulang kernel untuk **setiap panjang teks baru** sehingga generate bisa 4–5× lebih lambat (penting untuk teks panjang) |
 | `-v …:/app/…` | sambungkan 4 folder dari langkah 2 ke dalam kontainer |
 | `ghcr.io/varkir/voxcpm:rocm` | image yang dijalankan |
 
@@ -255,13 +258,82 @@ Buka di browser: **`http://<ip-server>:7770`** (dari server itu sendiri: `http:/
 - Whisper menulis angka di transkrip sebagai digit (`2026`, `75,5%`). Untuk *Ultimate Cloning*, ubah
   menjadi kata seperti yang benar-benar diucapkan di rekaman ("dua ribu dua puluh enam").
 - Tulis singkatan dalam bentuk ucapannya (`dll.` → "dan lain-lain").
-- Untuk suara narator tetap, latih LoRA dengan 10–30 menit rekaman bersih ([langkah 8](#8-training-lora)).
+- Untuk suara narator tetap, latih LoRA dengan 10–30 menit rekaman bersih ([langkah 9](#9-training-lora)).
 - Bahasa lain (Inggris, Melayu, Jepang, …) tetap bisa dipakai. Untuk teks Inggris, kosongkan
   `TEXT_NUMBER_LANG` dan `ASR_LANGUAGE` supaya angka dan transkrip tidak dipaksa Bahasa Indonesia.
 
 ---
 
-## 7. Menjalankan di background & otomatis saat boot
+## 7. Teks panjang (buku, artikel)
+
+Satu kali generate maksimal ±1.400 kata (±11 menit audio), dan hasil paling stabil di 50–200 kata.
+Untuk teks yang lebih panjang (sampai puluhan ribu kata), pakai `longform.sh`. Script ini:
+
+1. memotong teks per paragraf (paragraf pendek digabung sampai ±150 kata, paragraf panjang dipecah per kalimat),
+2. membuat setiap potongan dengan **suara dan seed yang sama**,
+3. menyimpan setiap potongan, jadi kalau terputus cukup jalankan perintah yang sama lagi dan potongan yang sudah jadi dilewati,
+4. menyambung semuanya dengan jeda antar paragraf menjadi **satu file WAV dan MP3** di folder `output/`.
+
+Script ini memakai WebUI yang sedang berjalan, jadi **jalankan WebUI dulu** ([langkah 5](#5-jalankan)).
+Selama script bekerja, WebUI tetap bisa dibuka, tapi generate dari browser akan menunggu giliran.
+
+**a. Siapkan teks.** Simpan sebagai file `.txt` (UTF-8) di folder `data`, misalnya
+`/mnt/varkir/Podman/voxcpm/data/buku.txt`. Pisahkan paragraf dengan **baris kosong**.
+
+**b. Cek pemotongan teks** (tanpa generate, beberapa detik saja):
+
+```bash
+/mnt/varkir/Podman/voxcpm/voxcpm-rocm/longform.sh buku.txt --dry-run
+```
+
+**c. Pilih suara**, salah satu:
+
+- Dari deskripsi (voice design). Potongan pertama dibuat dari deskripsi, lalu 12 detik pertamanya
+  dipakai sebagai referensi untuk semua potongan berikutnya, supaya suaranya tidak berubah-ubah:
+
+  ```bash
+  /mnt/varkir/Podman/voxcpm/voxcpm-rocm/longform.sh buku.txt --voice "Laki-laki dewasa, suara hangat dan tenang, seperti pendongeng"
+  ```
+
+- Dari rekaman suara (kloning). Taruh rekaman 5–15 detik di folder `data`:
+
+  ```bash
+  /mnt/varkir/Podman/voxcpm/voxcpm-rocm/longform.sh buku.txt --ref narator.wav
+  ```
+
+- Paling natural (Ultimate Cloning): rekaman + transkrip persis isinya:
+
+  ```bash
+  /mnt/varkir/Podman/voxcpm/voxcpm-rocm/longform.sh buku.txt --ref narator.wav --prompt-text "Selamat datang di cerita malam ini."
+  ```
+
+Hasil: `output/buku.wav` dan `output/buku.mp3`. Potongan tersimpan di `output/buku_parts/`;
+hapus folder itu kalau hasil sudah oke.
+
+**Perkiraan waktu** di RX 6700 XT: ±2–3 menit kerja untuk 1 menit audio. 10.000 kata (±1 jam 15 menit audio)
+butuh sekitar 3 jam, 20.000 kata sekitar 6 jam. Jalankan di dalam `tmux` atau `screen` supaya tidak putus kalau
+koneksi SSH terputus:
+
+```bash
+tmux new -s tts
+```
+
+Opsi lain (`--help` untuk semua):
+
+| Opsi | Bawaan | |
+|---|---|---|
+| `--out NAMA` | nama file teks | nama file hasil |
+| `--seed N` | `42` | ganti untuk variasi suara/intonasi lain |
+| `--max-words N` | `150` | maksimal kata per potongan |
+| `--pause DETIK` | `0.7` | jeda antar paragraf |
+| `--format wav\|mp3\|both` | `both` | jenis file hasil |
+| `--denoise` | mati | bersihkan noise rekaman referensi dulu |
+| `--steps N` | `10` | langkah difusi; lebih besar = lebih lambat, sedikit lebih halus |
+
+Kalau ingin ganti suara atau seed untuk teks yang sama, pakai `--out` dengan nama lain (atau hapus folder
+`_parts` lama). Script menolak mencampur potongan dari setelan berbeda.
+
+## 8. Menjalankan di background & otomatis saat boot
 
 Ganti `--rm -it` di perintah manual dengan `-d --restart=always`, lalu:
 
@@ -289,7 +361,7 @@ systemctl --user enable podman-restart.service
 
 ---
 
-## 8. Training LoRA
+## 9. Training LoRA
 
 Jalankan UI training (port sama, 7770) dengan menambahkan perintah setelah nama image:
 
@@ -309,7 +381,7 @@ Hasil LoRA muncul di folder `lora/`. Training di ROCm belum diuji sepenuhnya.
 
 ---
 
-## 9. Update, backup, dan pemulihan
+## 10. Update, backup, dan pemulihan
 
 **Update image** (data di folder host tidak tersentuh):
 
@@ -332,7 +404,7 @@ zstd -dc /mnt/varkir/BAK/voxcpm-rocm.tar.zst | podman load
 
 ---
 
-## 10. Pengaturan (environment variable)
+## 11. Pengaturan (environment variable)
 
 Tambahkan dengan `-e NAMA=nilai` di `podman run`, atau di depan `run.sh` (`PORT=8808 ./run.sh`).
 
@@ -348,11 +420,12 @@ Tambahkan dengan `-e NAMA=nilai` di `podman run`, atau di depan `run.sh` (`PORT=
 | `ASR_DEVICE` | GPU | `cpu` kalau VRAM sempit |
 | `TEXT_NUMBER_LANG` | kosong (mati) | `id` = angka → kata Bahasa Indonesia |
 | `HSA_OVERRIDE_GFX_VERSION` | — | lihat tabel di langkah 5; `run.sh` mengisinya otomatis |
+| `MIOPEN_FIND_MODE` | (normal) | `FAST` = jangan benchmark kernel per panjang baru; jauh lebih cepat untuk teks bervariasi |
 | `HF_TOKEN` | — | token Hugging Face, hanya untuk model privat |
 
 ---
 
-## 11. Masalah yang sering terjadi
+## 12. Masalah yang sering terjadi
 
 | Gejala | Penyebab & solusi |
 |---|---|

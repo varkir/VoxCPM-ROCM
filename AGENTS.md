@@ -8,7 +8,7 @@ beginners). Keep it in sync with any change you make here, in the same plain sty
 
 | Path | What |
 |---|---|
-| `voxcpm-rocm/` (this repo) | `README.md`, `AGENTS.md`, `run.sh`, `build.sh`: machine-specific wrappers |
+| `voxcpm-rocm/` (this repo) | `README.md`, `AGENTS.md`, `run.sh`, `build.sh` (machine-specific wrappers), `longform.sh` + `longform.py` (long text → one audio file) |
 | `../build/` | clone of `github.com/varkir/VoxCPM`, branch **`docker-rocm`**: upstream VoxCPM + `docker/rocm/` |
 | `../build/docker/rocm/Containerfile` | the image recipe |
 | `../build/docker/rocm/launch.py` | entrypoint; runs upstream `app.py` **unchanged** and monkeypatches it |
@@ -50,7 +50,18 @@ Pushing a new `:rocm` leaves the previous version untagged. Delete it to keep a 
 - **ASR:** Whisper (`openai/whisper-large-v3-turbo`) replaces SenseVoice, which can't do Indonesian.
 - **Indonesian numbers:** upstream normalizer is zh/en only. `TEXT_NUMBER_LANG=id` expands digits
   with `num2words` in `launch.py:expand_numbers` (handles `Rp`, `%`, `HH.MM`, `1.000.000`, `3,5`).
-- **VRAM:** VoxCPM2 peaks at about 5.8 GB. The owner also runs Ollama on the same 12 GB card;
+- **MIOpen find mode:** run with `MIOPEN_FIND_MODE=FAST`. In the default mode MIOpen benchmarks
+  convolution kernels for every new input shape, i.e. every new text/audio length, which made
+  long-form chunks run at RTF 4–11 instead of about 2.3. The find-db lives in `models/.cache/miopen`.
+- **Generation limits:** each step = 4 latent frames at 25 Hz = 0.16 s, and `max_len=4096` gives about 655 s
+  (≈1,400–1,500 Indonesian words, about 2.3 words/s). The KV cache is 8192 tokens for text (≈2.5
+  tokens/word) plus audio steps. Keep chunks around 50–200 words for stability.
+- **Long-form (`longform.py`):** streamed into the running container with `podman exec -i voxcpm python -`
+  and calls the WebUI `/generate` API, so the model isn't loaded twice. Its positional args are text,
+  control_instruction, ref_wav, use_prompt_text, prompt_text_value, cfg_value, do_normalize, denoise,
+  dit_steps and seed_value. Without `--ref`, chunk 1's first 12 s become the reference. Chunks are cached in
+  `output/<name>_parts/` keyed by index and text hash; `settings.json` there blocks mixing voices.
+- **VRAM:** VoxCPM2 peaks at about 5.8 GB, and Whisper adds about 1.5 GB once ASR has run. The owner also runs Ollama on the same 12 GB card;
   "HIP out of memory" usually means an Ollama model is loaded. Don't unload it without asking.
 
 ## Build, run, test
@@ -61,6 +72,8 @@ PUSH=0 ./build.sh                      # build ghcr.io/varkir/voxcpm:rocm locall
 ./run.sh                               # WebUI on :7770, network varkir, IP 10.20.0.11
 NETWORK= IP= PORT=8808 ./run.sh        # without the custom network
 ENGINE=echo ./run.sh                   # print the docker-style command without running (podman adds keep-groups)
+./longform.sh buku.txt --dry-run        # long text: show the chunking
+./longform.sh buku.txt --voice "..."   # long text -> output/buku.{wav,mp3} (WebUI must be running)
 ```
 
 Smoke tests, in order of cost:
