@@ -90,7 +90,7 @@ Isi masing-masing folder:
 Clone repo ini (berisi `run.sh` dan `build.sh`):
 
 ```bash
-git clone https://github.com/varkir/voxcpm-rocm.git /mnt/varkir/Podman/voxcpm/voxcpm-rocm
+git clone https://github.com/varkir/VoxCPM-ROCM.git /mnt/varkir/Podman/voxcpm/voxcpm-rocm
 ```
 
 ---
