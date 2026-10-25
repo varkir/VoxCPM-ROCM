@@ -18,7 +18,11 @@ beginners). Keep it in sync with any change you make here, in the same plain sty
 The wrappers find everything relative to their own location (`BASE` = parent of this repo),
 so this repo must sit next to `build/`. Default base on the owner's server: `/mnt/varkir/Podman/voxcpm`.
 
-Image: **`ghcr.io/varkir/voxcpm:rocm`** (public; the only tag). Package source label points to this repo.
+Image: **`ghcr.io/varkir/voxcpm:rocm`** (public; the only tag and version). The image's OCI source
+points to this repo, but on GitHub the package stays linked to `varkir/VoxCPM` (GHCR keeps the first
+repository a package was linked to; changing it means deleting and re-creating the package).
+Pushing a new `:rocm` leaves the previous version untagged. Delete it to keep a single version:
+`gh api /user/packages/container/voxcpm/versions` → `gh api -X DELETE .../versions/<id>` (needs `delete:packages`).
 
 ## Hard-won facts (do not "fix" these back)
 
