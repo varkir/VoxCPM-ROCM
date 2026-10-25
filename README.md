@@ -264,8 +264,26 @@ Buka di browser: **`http://<ip-server>:7770`** (dari server itu sendiri: `http:/
 
 ## 7. Teks panjang (buku, artikel)
 
-Satu kali generate maksimal ±1.400 kata (±11 menit audio), dan hasil paling stabil di 50–200 kata.
-Untuk teks yang lebih panjang (sampai puluhan ribu kata), pakai `longform.sh`. Script ini:
+Model hanya sanggup ±1.400 kata (±11 menit audio) dalam satu kali generate, dan hasil paling stabil di
+50–200 kata. Teks yang lebih panjang otomatis dipotong, jadi **20 ribu kata pun tidak error**. Ada dua cara:
+
+### Cara 1 — langsung di WebUI
+
+Tempel teks sepanjang apa pun lalu klik **Generate**. Di belakang layar, teks di atas 150 kata dipotong per
+paragraf, dibuat satu per satu dengan seed dan suara yang sama, lalu disambung. Hasilnya muncul di WebUI
+**dan otomatis disimpan** sebagai `output/webui_<tanggal>_<jam>.wav` dan `.mp3`, jadi tetap ada walaupun
+browser tertutup atau koneksi putus di tengah jalan. Pantau kemajuannya dengan:
+
+```bash
+podman logs -f voxcpm
+```
+
+Cocok untuk teks sampai beberapa ribu kata. Untuk buku (puluhan ribu kata, berjam-jam), pakai cara 2:
+kalau WebUI di-restart di tengah jalan, cara 1 harus mengulang dari awal, sedangkan cara 2 bisa melanjutkan.
+
+### Cara 2 — `longform.sh` (bisa dilanjutkan kalau terputus)
+
+Script ini:
 
 1. memotong teks per paragraf (paragraf pendek digabung sampai ±150 kata, paragraf panjang dipecah per kalimat),
 2. membuat setiap potongan dengan **suara dan seed yang sama**,
@@ -418,6 +436,7 @@ Tambahkan dengan `-e NAMA=nilai` di `podman run`, atau di depan `run.sh` (`PORT=
 | `ASR_DEVICE` | GPU | `cpu` kalau VRAM sempit |
 | `TEXT_NUMBER_LANG` | kosong (mati) | `id` = angka → kata Bahasa Indonesia |
 | `HSA_OVERRIDE_GFX_VERSION` | — | lihat tabel di langkah 5; `run.sh` mengisinya otomatis |
+| `AUTO_SPLIT_WORDS` | `150` | teks lebih panjang dari ini dipotong otomatis di WebUI. `0` = matikan (teks > ±1.400 kata akan error) |
 | `MIOPEN_FIND_MODE` | `FAST` | sudah bawaan image. Jangan diubah: mode lain membuat GPU "menguji" ulang kernel untuk setiap panjang teks baru, sehingga generate 4–5× lebih lambat |
 | `HF_TOKEN` | — | token Hugging Face, hanya untuk model privat |
 
@@ -432,6 +451,7 @@ Tambahkan dengan `-e NAMA=nilai` di `podman run`, atau di depan `run.sh` (`PORT=
 | `No ROCm GPU visible … running on CPU` | `/dev/kfd` tidak diteruskan atau user tidak di grup `render`. Cek langkah 1 dan `--group-add keep-groups` |
 | `Permission denied` di `/app/...` | jangan pakai `--userns=keep-id` atau `--user`; semua yang ditulis ada di folder volume |
 | Generate pertama sangat lama | normal: memuat model + unduh denoiser + menyetel kernel. Unduh model dulu (langkah 4) |
+| `HIP out of memory … Tried to allocate 5.96 GiB` saat teks sangat panjang | image lama tanpa pemotongan otomatis: `podman pull ghcr.io/varkir/voxcpm:rocm` lalu restart, atau pakai `longform.sh` |
 | Angka dibaca dalam bahasa Inggris | matikan *Text Normalization* di UI, pastikan `TEXT_NUMBER_LANG=id` |
 | Start kontainer pertama lama sekali | ada `--userns=keep-id`; hapus |
 | Port sudah dipakai / nama `voxcpm` sudah ada | kontainer lama masih jalan: `podman stop voxcpm` |

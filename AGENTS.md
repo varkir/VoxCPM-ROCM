@@ -56,6 +56,10 @@ Pushing a new `:rocm` leaves the previous version untagged. Delete it to keep a 
 - **Generation limits:** each step = 4 latent frames at 25 Hz = 0.16 s, and `max_len=4096` gives about 655 s
   (≈1,400–1,500 Indonesian words, about 2.3 words/s). The KV cache is 8192 tokens for text (≈2.5
   tokens/word) plus audio steps. Keep chunks around 50–200 words for stability.
+- **WebUI auto-split (`launch.py:_generate_tts_audio`):** text over `AUTO_SPLIT_WORDS` (150) is split with
+  `split_text`, generated chunk by chunk with one seed, and the voice is locked from chunk 1's first 12 s.
+  Each chunk is decoded separately; decoding one huge latent used to OOM ("Tried to allocate 5.96 GiB").
+  Results are also written to `/app/output/webui_<time>.wav/.mp3`. Unlike longform.sh it can't resume.
 - **Long-form (`longform.py`):** streamed into the running container with `podman exec -i voxcpm python -`
   and calls the WebUI `/generate` API, so the model isn't loaded twice. Its positional args are text,
   control_instruction, ref_wav, use_prompt_text, prompt_text_value, cfg_value, do_normalize, denoise,
