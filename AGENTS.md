@@ -60,6 +60,12 @@ Pushing a new `:rocm` leaves the previous version untagged. Delete it to keep a 
   `split_text`, generated chunk by chunk with one seed, and the voice is locked from chunk 1's first 12 s.
   Each chunk is decoded separately; decoding one huge latent used to OOM ("Tried to allocate 5.96 GiB").
   Results are also written to `/app/output/webui_<time>.wav/.mp3`. Unlike longform.sh it can't resume.
+- **Voice presets (`launch.py`, `VOICES_DIR=/app/data/voices`):** a Dropdown is injected right before the reference
+  `gr.Audio` (the only one with `sources=["upload","microphone"]`) by swapping `gr.Audio` during UI build. The
+  checkbox and transcript box are found as the next two blocks in `interface.blocks`. Choosing a preset outputs
+  (audio, True, transcript). Toggling Ultimate Cloning re-runs ASR on Gradio's *copy* of the file, so
+  `prompt_wav_recognition` matches presets by size + sha1 and returns `<name>.txt` (written by Whisper once if
+  missing). `Blocks.launch` is wrapped to add `VOICES_DIR` to `allowed_paths`.
 - **OOM handling (`launch.py:gen_piece`):** a chunk that hits `torch.OutOfMemoryError` (usually in AudioVAE decode) is
   retried in halves split at sentence ends, up to 4 levels. The retry must run *outside* the `except` block, or the
   live traceback keeps the failed attempt's tensors and memory grows on every retry. Whisper is released from the GPU

@@ -247,6 +247,22 @@ Buka di browser: **`http://<ip-server>:7770`** (dari server itu sendiri: `http:/
 | **Controllable Cloning** | upload rekaman suara (5–15 detik) + boleh isi *Control Instruction* untuk mengatur emosi/tempo |
 | **Ultimate Cloning** | upload rekaman + aktifkan *Ultimate Cloning Mode*. Transkrip diisi otomatis oleh Whisper; **periksa dan perbaiki** supaya persis sama dengan isi rekaman. Ini hasil paling natural |
 
+**Voice preset (suara siap pakai)**
+
+Simpan rekaman suara yang sering dipakai di folder `data/voices/`. Nama file menjadi nama preset:
+
+```
+data/voices/
+├── en-george.mp3   ← rekaman 5–15 detik
+├── en-george.txt   ← transkrip persis isi rekaman (opsional)
+├── en-sam.mp3
+└── id-ahmad.mp3
+```
+
+Di WebUI, pilih preset di dropdown **Voice preset** (di atas *Reference Audio*). Audio, *Ultimate Cloning Mode*,
+dan transkripnya terisi otomatis. Kalau `.txt` belum ada, Whisper membuatkannya sekali dan menyimpannya; buka
+file itu untuk memperbaiki kalau ada kata yang salah. Preset baru muncul setelah halaman WebUI di-refresh.
+
 **Tips supaya Bahasa Indonesia terdengar natural**
 
 - Matikan **Text Normalization** di UI. Normalizer bawaan hanya untuk Mandarin/Inggris dan akan
@@ -437,6 +453,7 @@ Tambahkan dengan `-e NAMA=nilai` di `podman run`, atau di depan `run.sh` (`PORT=
 | `TEXT_NUMBER_LANG` | kosong (mati) | `id` = angka → kata Bahasa Indonesia |
 | `HSA_OVERRIDE_GFX_VERSION` | — | lihat tabel di langkah 5; `run.sh` mengisinya otomatis |
 | `DIT_STEPS` | `10` | nilai awal slider *LocDiT flow-matching steps* di WebUI, juga bawaan `--steps` di `longform.sh`. Lebih kecil = lebih cepat tapi suara sedikit lebih kasar. Contoh `-e DIT_STEPS=5` |
+| `VOICES_DIR` | `/app/data/voices` | folder voice preset untuk dropdown di WebUI |
 | `AUTO_SPLIT_WORDS` | `150` | teks lebih panjang dari ini dipotong otomatis di WebUI. `0` = matikan (teks > ±1.400 kata akan error) |
 | `MIOPEN_FIND_MODE` | `FAST` | sudah bawaan image. Jangan diubah: mode lain membuat GPU "menguji" ulang kernel untuk setiap panjang teks baru, sehingga generate 4–5× lebih lambat |
 | `HF_TOKEN` | — | token Hugging Face, hanya untuk model privat |
