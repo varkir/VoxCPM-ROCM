@@ -97,7 +97,8 @@ def main():
     ap.add_argument("--voice", default="", help="voice description / style instruction")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--cfg", type=float, default=2.0)
-    ap.add_argument("--steps", type=int, default=10, help="diffusion steps (more = slower, slightly better)")
+    ap.add_argument("--steps", type=int, default=int(os.environ.get("DIT_STEPS") or 10),
+                    help="diffusion steps (default: the container's DIT_STEPS, else 10; more = slower, slightly better)")
     ap.add_argument("--denoise", action="store_true", help="denoise the reference recording first")
     ap.add_argument("--max-words", type=int, default=150, help="max words per chunk")
     ap.add_argument("--pause", type=float, default=0.7, help="seconds of silence between paragraphs")

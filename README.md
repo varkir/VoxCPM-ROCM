@@ -344,7 +344,7 @@ Opsi lain (`--help` untuk semua):
 | `--pause DETIK` | `0.7` | jeda antar paragraf |
 | `--format wav\|mp3\|both` | `both` | jenis file hasil |
 | `--denoise` | mati | bersihkan noise rekaman referensi dulu |
-| `--steps N` | `10` | langkah difusi; lebih besar = lebih lambat, sedikit lebih halus |
+| `--steps N` | `DIT_STEPS` kontainer, atau `10` | langkah difusi; lebih besar = lebih lambat, sedikit lebih halus |
 
 Kalau ingin ganti suara atau seed untuk teks yang sama, pakai `--out` dengan nama lain (atau hapus folder
 `_parts` lama). Script menolak mencampur potongan dari setelan berbeda.
@@ -436,6 +436,7 @@ Tambahkan dengan `-e NAMA=nilai` di `podman run`, atau di depan `run.sh` (`PORT=
 | `ASR_DEVICE` | GPU | `cpu` kalau VRAM sempit |
 | `TEXT_NUMBER_LANG` | kosong (mati) | `id` = angka → kata Bahasa Indonesia |
 | `HSA_OVERRIDE_GFX_VERSION` | — | lihat tabel di langkah 5; `run.sh` mengisinya otomatis |
+| `DIT_STEPS` | `10` | nilai awal slider *LocDiT flow-matching steps* di WebUI, juga bawaan `--steps` di `longform.sh`. Lebih kecil = lebih cepat tapi suara sedikit lebih kasar. Contoh `-e DIT_STEPS=5` |
 | `AUTO_SPLIT_WORDS` | `150` | teks lebih panjang dari ini dipotong otomatis di WebUI. `0` = matikan (teks > ±1.400 kata akan error) |
 | `MIOPEN_FIND_MODE` | `FAST` | sudah bawaan image. Jangan diubah: mode lain membuat GPU "menguji" ulang kernel untuk setiap panjang teks baru, sehingga generate 4–5× lebih lambat |
 | `HF_TOKEN` | — | token Hugging Face, hanya untuk model privat |
