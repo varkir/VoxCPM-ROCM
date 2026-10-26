@@ -452,7 +452,7 @@ Tambahkan dengan `-e NAMA=nilai` di `podman run`, atau di depan `run.sh` (`PORT=
 | `No ROCm GPU visible … running on CPU` | `/dev/kfd` tidak diteruskan atau user tidak di grup `render`. Cek langkah 1 dan `--group-add keep-groups` |
 | `Permission denied` di `/app/...` | jangan pakai `--userns=keep-id` atau `--user`; semua yang ditulis ada di folder volume |
 | Generate pertama sangat lama | normal: memuat model + unduh denoiser + menyetel kernel. Unduh model dulu (langkah 4) |
-| `HIP out of memory … Tried to allocate 5.96 GiB` saat teks sangat panjang | image lama tanpa pemotongan otomatis: `podman pull ghcr.io/varkir/voxcpm:rocm` lalu restart, atau pakai `longform.sh` |
+| `HIP out of memory … Tried to allocate …` saat render panjang | image terbaru membagi potongan yang kena OOM lalu mencoba lagi, jadi render tidak gagal total (tapi lebih lambat). Supaya jarang terjadi: `-e AUTO_SPLIT_WORDS=80`, tutup model Ollama, dan restart kontainer setelah error (VRAM sisa error tetap tertahan). Kalau masih kurang: `-e ASR_DEVICE=cpu` |
 | Angka dibaca dalam bahasa Inggris | matikan *Text Normalization* di UI, pastikan `TEXT_NUMBER_LANG=id` |
 | Start kontainer pertama lama sekali | ada `--userns=keep-id`; hapus |
 | Port sudah dipakai / nama `voxcpm` sudah ada | kontainer lama masih jalan: `podman stop voxcpm` |

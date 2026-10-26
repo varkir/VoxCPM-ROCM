@@ -60,6 +60,11 @@ Pushing a new `:rocm` leaves the previous version untagged. Delete it to keep a 
   `split_text`, generated chunk by chunk with one seed, and the voice is locked from chunk 1's first 12 s.
   Each chunk is decoded separately; decoding one huge latent used to OOM ("Tried to allocate 5.96 GiB").
   Results are also written to `/app/output/webui_<time>.wav/.mp3`. Unlike longform.sh it can't resume.
+- **OOM handling (`launch.py:gen_piece`):** a chunk that hits `torch.OutOfMemoryError` (usually in AudioVAE decode) is
+  retried in halves split at sentence ends, up to 4 levels. The retry must run *outside* the `except` block, or the
+  live traceback keeps the failed attempt's tensors and memory grows on every retry. Whisper is released from the GPU
+  after each transcription (~1.5 GB). Ultimate Cloning chunks also decode the reference (~15 s), so OOM is likelier
+  there; `AUTO_SPLIT_WORDS=80` keeps the decode around 1 GB.
 - **Long-form (`longform.py`):** streamed into the running container with `podman exec -i voxcpm python -`
   and calls the WebUI `/generate` API, so the model isn't loaded twice. Its positional args are text,
   control_instruction, ref_wav, use_prompt_text, prompt_text_value, cfg_value, do_normalize, denoise,
